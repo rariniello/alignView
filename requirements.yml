@@ -1,0 +1,15 @@
+name: alignView
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.14.0
+  - numpy=2.3.4
+  - scipy=1.16.3
+  - pyqt=6.9.1
+  - pyqtgraph=0.13.7
+  - pyinstaller=6.16.0
+  - pyyaml=6.0.3
+  - pip=25.0.0
+  - pip:
+    - pypylon==4.2.0

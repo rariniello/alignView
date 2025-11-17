@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>arrow-circle-double-135.png</file>
+    <file>control.png</file>
+    <file>control-pause.png</file>
+  </qresource>
+</RCC>
