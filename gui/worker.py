@@ -5,7 +5,7 @@ from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 class Worker(QObject):
     finished = pyqtSignal()
     update = pyqtSignal(np.ndarray)
-    connected = pyqtSignal()
+    connected = pyqtSignal(dict)
     connectionFailed = pyqtSignal()
 
     def __init__(self, serial_number, camera_class):
@@ -21,7 +21,15 @@ class Worker(QObject):
         except TypeError:
             self.connectionFailed.emit()
             return
-        self.connected.emit()
+
+        parameters = {}
+        parameters["exposure"] = self.camera.get_exposure()
+        parameters["gain"] = self.camera.get_gain()
+        parameters["width"] = self.camera.get_width()
+        parameters["height"] = self.camera.get_width()
+        parameters["offsetX"] = self.camera.get_width()
+        parameters["offsetY"] = self.camera.get_width()
+        self.connected.emit(parameters)
 
     @pyqtSlot()
     def disconnect_camera(self):
@@ -47,9 +55,29 @@ class Worker(QObject):
 
     @pyqtSlot(float)
     def change_exposure(self, value: float):
-        """Changes the spectrometers exposure time to the given exposure.
+        """Changes the cameras exposure time.
 
         Args:
             value: Expsorue to set [ms].
         """
         self.camera.set_exposure(value)
+
+    @pyqtSlot(float)
+    def change_gain(self, value: float):
+        self.camera.set_gain(value)
+
+    @pyqtSlot(int)
+    def change_width(self, value: float):
+        self.camera.set_width(value)
+
+    @pyqtSlot(int)
+    def change_height(self, value: float):
+        self.camera.set_height(value)
+
+    @pyqtSlot(int)
+    def change_offsetX(self, value: float):
+        self.camera.set_offsetX(value)
+
+    @pyqtSlot(int)
+    def change_offsetY(self, value: float):
+        self.camera.set_offsetY(value)

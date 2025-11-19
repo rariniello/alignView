@@ -7,6 +7,11 @@ from interfaces import camera_interface
 class Basler(QObject):
     # class Basler(camera_interface.Camera, QObject):
     exposure_changed = pyqtSignal(float)
+    gain_changed = pyqtSignal(float)
+    width_changed = pyqtSignal(int)
+    height_changed = pyqtSignal(float)
+    offsetX_changed = pyqtSignal(float)
+    offsetY_changed = pyqtSignal(float)
 
     def __init__(self, serial_number):
         super().__init__()
@@ -20,6 +25,11 @@ class Basler(QObject):
         camera.Open()
         self.camera = camera
         genicam.Register(camera.ExposureTime.GetNode(), self._on_exposure_change)
+        genicam.Register(camera.Gain.GetNode(), self._on_gain_change)
+        genicam.Register(camera.Width.GetNode(), self._on_width_change)
+        genicam.Register(camera.Height.GetNode(), self._on_height_change)
+        genicam.Register(camera.OffsetX.GetNode(), self._on_offsetX_change)
+        genicam.Register(camera.OffsetY.GetNode(), self._on_offsetY_change)
 
     def close(self):
         self.camera.Close()
@@ -50,4 +60,72 @@ class Basler(QObject):
         return self.camera.ExposureTime.Value * 1.0e-3
 
     def _on_exposure_change(self, update):
-        self.exposure_changed.emit(update.Value * 1.0e-3)
+        try:
+            self.exposure_changed.emit(update.Value * 1.0e-3)
+        except:
+            pass
+
+    def set_gain(self, value):
+        self.camera.Gain.Value = value
+
+    def get_gain(self):
+        """Returns the camera's gain [dB]."""
+        return self.camera.Gain.Value
+
+    def _on_gain_change(self, update):
+        try:
+            self.gain_changed.emit(update.Value)
+        except:
+            pass
+
+    def set_width(self, value):
+        self.camera.Width.Value = value
+
+    def get_width(self):
+        """Returns the camera's ROI width [px]."""
+        return self.camera.Width.Value
+
+    def _on_width_change(self, update):
+        try:
+            self.width_changed.emit(update.Value)
+        except:
+            pass
+
+    def set_height(self, value):
+        self.camera.Height.Value = value
+
+    def get_height(self):
+        """Returns the camera's ROI height [px]."""
+        return self.camera.Height.Value
+
+    def _on_height_change(self, update):
+        try:
+            self.height_changed.emit(update.Value)
+        except:
+            pass
+
+    def set_offsetX(self, value):
+        self.camera.OffsetX.Value = value
+
+    def get_offsetX(self):
+        """Returns the camera's ROI width [px]."""
+        return self.camera.OffsetX.Value
+
+    def _on_offsetX_change(self, update):
+        try:
+            self.offsetX_changed.emit(update.Value)
+        except:
+            pass
+
+    def set_offsetY(self, value):
+        self.camera.OffsetY.Value = value
+
+    def get_offsetY(self):
+        """Returns the camera's ROI width [px]."""
+        return self.camera.OffsetY.Value
+
+    def _on_offsetY_change(self, update):
+        try:
+            self.offsetY_changed.emit(update.Value)
+        except:
+            pass

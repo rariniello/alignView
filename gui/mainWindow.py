@@ -56,6 +56,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         view = self.imageView.getView()
         view.disableAutoRange()
         hist = self.imageView.getHistogramWidget()
+        hist.setLevels(0.0, self.max_level)
         hist.setHistogramRange(0.0, self.max_level, 0.0)
         hist.vb.enableAutoRange("y", False)
         hist.vb.setLimits(yMin=0.0, yMax=self.max_level, minYRange=10)
@@ -111,6 +112,11 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.worker.update.connect(self.doUpdate)
         self.worker.connected.connect(self.onConnect)
         self.exposureField.valueChanged.connect(self.worker.change_exposure)
+        self.gainField.valueChanged.connect(self.worker.change_gain)
+        self.widthField.valueChanged.connect(self.worker.change_width)
+        self.heightField.valueChanged.connect(self.worker.change_height)
+        # self.offsetXField.valueChanged.connect(self.worker.change_offsetX)
+        # self.offsetYField.valueChanged.connect(self.worker.change_offsetY)
 
         # Start the thread and set initial spectrometer parameters
         self.thread.start()
@@ -119,21 +125,42 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.serial_number = None
         self.cam = None
         self.first_image = True
+        self.stop_streaming()
         self.disconnect.emit()
         self.startButton.setEnabled(False)
         self.stopButton.setEnabled(False)
         self.connectButton.setEnabled(True)
-        self.refreshButton.setEnabled(True)
+        self.disconnectButton.setEnabled(False)
+        # self.refreshButton.setEnabled(True)
+        self.exposureField.setEnabled(False)
+        self.gainField.setEnabled(False)
+        self.widthField.setEnabled(False)
+        self.heightField.setEnabled(False)
+        self.offsetXField.setEnabled(False)
+        self.offsetYField.setEnabled(False)
 
-    @pyqtSlot()
-    def onConnect(self):
+    @pyqtSlot(dict)
+    def onConnect(self, parameters):
         """Updates the gui when the camera is connected."""
         self.statusbar.showMessage("Connected to camera {}".format(self.name))
         self.baseMessage = "Connected to camera {} | ".format(self.name)
         self.startButton.setEnabled(True)
         self.connectButton.setEnabled(False)
-        self.refreshButton.setEnabled(False)
-        self.exposureField.setValue(self.worker.camera.get_exposure())
+        self.disconnectButton.setEnabled(True)
+        # self.refreshButton.setEnabled(False)
+        self.exposureField.setEnabled(True)
+        self.gainField.setEnabled(True)
+        self.widthField.setEnabled(True)
+        self.heightField.setEnabled(True)
+        self.offsetXField.setEnabled(True)
+        self.offsetYField.setEnabled(True)
+        # TODO also set max/min values
+        self.exposureField.setValue(parameters["exposure"])
+        self.gainField.setValue(parameters["gain"])
+        self.widthField.setValue(parameters["width"])
+        self.heightField.setValue(parameters["height"])
+        self.offsetXField.setValue(parameters["offsetX"])
+        self.offsetYField.setValue(parameters["offsetY"])
 
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
