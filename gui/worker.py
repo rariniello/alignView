@@ -26,9 +26,9 @@ class Worker(QObject):
         parameters["exposure"] = self.camera.get_exposure()
         parameters["gain"] = self.camera.get_gain()
         parameters["width"] = self.camera.get_width()
-        parameters["height"] = self.camera.get_width()
-        parameters["offsetX"] = self.camera.get_width()
-        parameters["offsetY"] = self.camera.get_width()
+        parameters["height"] = self.camera.get_height()
+        parameters["offsetX"] = self.camera.get_offsetX()
+        parameters["offsetY"] = self.camera.get_offsetY()
         self.connected.emit(parameters)
 
     @pyqtSlot()

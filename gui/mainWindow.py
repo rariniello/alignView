@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QFileDialog, QMainWindow
 
 import config
 import gui.ui.ui_MainWindow as ui_MainWindow
-from backends import camera_basler, enumerate_basler
+from backends import camera_basler, camera_test, enumerate_basler, enumerate_test
 from gui.worker import Worker
 
 
@@ -41,8 +41,12 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.refresh_camera_list()
 
     def select_backend(self):
-        self.enumerate_devices = enumerate_basler.EnumBasler()
-        self.camera_class = camera_basler.Basler
+        if config.testing:
+            self.enumerate_devices = enumerate_test.EnumTest()
+            self.camera_class = camera_test.TestCam
+        else:
+            self.enumerate_devices = enumerate_basler.EnumBasler()
+            self.camera_class = camera_basler.Basler
 
     def connect_signal_slots(self):
         """Connects signals from gui widgets to slots in this class."""
@@ -115,8 +119,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.gainField.valueChanged.connect(self.worker.change_gain)
         self.widthField.valueChanged.connect(self.worker.change_width)
         self.heightField.valueChanged.connect(self.worker.change_height)
-        # self.offsetXField.valueChanged.connect(self.worker.change_offsetX)
-        # self.offsetYField.valueChanged.connect(self.worker.change_offsetY)
+        self.offsetXField.valueChanged.connect(self.worker.change_offsetX)
+        self.offsetYField.valueChanged.connect(self.worker.change_offsetY)
 
         # Start the thread and set initial spectrometer parameters
         self.thread.start()

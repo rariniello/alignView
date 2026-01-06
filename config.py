@@ -1,9 +1,9 @@
 import os
 import sys
 
-
 alignViewPath = None
 savePath = None
+testing = True
 
 
 def defPaths():
@@ -15,10 +15,10 @@ def defPaths():
 
 def getAlignViewPath():
     # _MEIPASS is the path to the bundle folder, set by the pyinstaller bootloader
-    if hasattr(sys, '_MEIPASS'):
+    if hasattr(sys, "_MEIPASS"):
         return sys._MEIPASS
     if isFrozen():
-        base = getattr(sys.modules['__main__'], '__file__', sys.executable)
+        base = getattr(sys.modules["__main__"], "__file__", sys.executable)
     else:
         base = __file__
     path = os.path.dirname(os.path.realpath(os.path.abspath(base)))
@@ -27,7 +27,7 @@ def getAlignViewPath():
 
 def isFrozen() -> bool:
     # frozen attribute is added by pyinstaller
-    if hasattr(sys, 'frozen'):
+    if hasattr(sys, "frozen"):
         return True
     else:
         return False
