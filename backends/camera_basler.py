@@ -59,6 +59,12 @@ class Basler(QObject):
         """Returns the camera's expsoure time [ms]."""
         return self.camera.ExposureTime.Value * 1.0e-3
 
+    def get_exposure_range(self):
+        return [
+            self.camera.ExposureTime.Min * 1.0e-3,
+            self.camera.ExposureTime.Max * 1.0e-3,
+        ]
+
     def _on_exposure_change(self, update):
         try:
             self.exposure_changed.emit(update.Value * 1.0e-3)

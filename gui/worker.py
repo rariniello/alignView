@@ -24,6 +24,7 @@ class Worker(QObject):
 
         parameters = {}
         parameters["exposure"] = self.camera.get_exposure()
+        parameters["exposure_range"] = self.camera.get_exposure_range()
         parameters["gain"] = self.camera.get_gain()
         parameters["width"] = self.camera.get_width()
         parameters["height"] = self.camera.get_height()

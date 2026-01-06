@@ -160,6 +160,9 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.offsetYField.setEnabled(True)
         # TODO also set max/min values
         self.exposureField.setValue(parameters["exposure"])
+        self.exposureField.setMinimum(parameters["exposure_range"][0])
+        self.exposureField.setMaximum(parameters["exposure_range"][1])
+        print(parameters)
         self.gainField.setValue(parameters["gain"])
         self.widthField.setValue(parameters["width"])
         self.heightField.setValue(parameters["height"])
@@ -199,6 +202,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.request_image.emit()
         self.stopButton.setEnabled(True)
         self.startButton.setEnabled(False)
+        self.widthField.setEnabled(False)
+        self.heightField.setEnabled(False)
 
     @pyqtSlot()
     def stop_streaming(self):
@@ -208,6 +213,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.signal_stop_streaming.emit()
         self.stopButton.setEnabled(False)
         self.startButton.setEnabled(True)
+        self.widthField.setEnabled(True)
+        self.heightField.setEnabled(True)
 
     def update_plot(self, img):
         if self.first_image:
