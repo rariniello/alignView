@@ -78,6 +78,12 @@ class Basler(QObject):
         """Returns the camera's gain [dB]."""
         return self.camera.Gain.Value
 
+    def get_gain_range(self):
+        return [
+            self.camera.Gain.Min,
+            self.camera.Gain.Max,
+        ]
+
     def _on_gain_change(self, update):
         try:
             self.gain_changed.emit(update.Value)
@@ -90,6 +96,12 @@ class Basler(QObject):
     def get_width(self):
         """Returns the camera's ROI width [px]."""
         return self.camera.Width.Value
+
+    def get_width_range(self):
+        return [
+            self.camera.Width.Min,
+            self.camera.Width.Max,
+        ]
 
     def _on_width_change(self, update):
         try:
@@ -104,6 +116,12 @@ class Basler(QObject):
         """Returns the camera's ROI height [px]."""
         return self.camera.Height.Value
 
+    def get_height_range(self):
+        return [
+            self.camera.Height.Min,
+            self.camera.Height.Max,
+        ]
+
     def _on_height_change(self, update):
         try:
             self.height_changed.emit(update.Value)
@@ -117,6 +135,12 @@ class Basler(QObject):
         """Returns the camera's ROI width [px]."""
         return self.camera.OffsetX.Value
 
+    def get_offsetX_range(self):
+        return [
+            self.camera.OffsetX.Min,
+            self.camera.OffsetX.Max,
+        ]
+
     def _on_offsetX_change(self, update):
         try:
             self.offsetX_changed.emit(update.Value)
@@ -129,6 +153,12 @@ class Basler(QObject):
     def get_offsetY(self):
         """Returns the camera's ROI width [px]."""
         return self.camera.OffsetY.Value
+
+    def get_offsetY_range(self):
+        return [
+            self.camera.OffsetY.Min,
+            self.camera.OffsetY.Max,
+        ]
 
     def _on_offsetY_change(self, update):
         try:

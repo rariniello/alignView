@@ -55,6 +55,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.disconnectButton.clicked.connect(self.disconnect_camera)
         self.startButton.clicked.connect(self.start_streaming)
         self.stopButton.clicked.connect(self.stop_streaming)
+        self.widthField.valueChanged.connect(self.update_ranges)
 
     def setup_plot(self):
         view = self.imageView.getView()
@@ -158,16 +159,31 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.heightField.setEnabled(True)
         self.offsetXField.setEnabled(True)
         self.offsetYField.setEnabled(True)
-        # TODO also set max/min values
+
         self.exposureField.setValue(parameters["exposure"])
         self.exposureField.setMinimum(parameters["exposure_range"][0])
         self.exposureField.setMaximum(parameters["exposure_range"][1])
-        print(parameters)
+
         self.gainField.setValue(parameters["gain"])
+        self.gainField.setMinimum(parameters["gain_range"][0])
+        self.gainField.setMaximum(parameters["gain_range"][1])
+
         self.widthField.setValue(parameters["width"])
+        self.widthField.setMinimum(parameters["width_range"][0])
+        self.widthField.setMaximum(parameters["width_range"][1])
+
         self.heightField.setValue(parameters["height"])
+        self.heightField.setMinimum(parameters["height_range"][0])
+        self.heightField.setMaximum(parameters["height_range"][1])
+
         self.offsetXField.setValue(parameters["offsetX"])
+        self.offsetXField.setMinimum(parameters["offsetX_range"][0])
+        self.offsetXField.setMaximum(parameters["offsetX_range"][1])
+
         self.offsetYField.setValue(parameters["offsetY"])
+        self.offsetYField.setMinimum(parameters["offsetY_range"][0])
+        self.offsetYField.setMaximum(parameters["offsetY_range"][1])
+        print(parameters)
 
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
