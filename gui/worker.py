@@ -7,6 +7,8 @@ class Worker(QObject):
     update = pyqtSignal(np.ndarray)
     connected = pyqtSignal(dict)
     connectionFailed = pyqtSignal()
+    parametersUpdated = pyqtSignal(dict)
+    offsetRangeUpdated = pyqtSignal(dict)
 
     def __init__(self, serial_number, camera_class):
         super().__init__()
@@ -22,6 +24,15 @@ class Worker(QObject):
             self.connectionFailed.emit()
             return
 
+        parameters = self._get_parameters()
+        self.connected.emit(parameters)
+
+    @pyqtSlot()
+    def get_parameters(self):
+        parameters = self._get_parameters()
+        self.parametersUpdated.emit(parameters)
+
+    def _get_parameters(self):
         parameters = {}
         parameters["exposure"] = self.camera.get_exposure()
         parameters["exposure_range"] = self.camera.get_exposure_range()
@@ -35,7 +46,15 @@ class Worker(QObject):
         parameters["offsetX_range"] = self.camera.get_offsetX_range()
         parameters["offsetY"] = self.camera.get_offsetY()
         parameters["offsetY_range"] = self.camera.get_offsetY_range()
-        self.connected.emit(parameters)
+        return parameters
+
+    def get_offset_range(self):
+        parameters = {}
+        parameters["offsetX"] = self.camera.get_offsetX()
+        parameters["offsetX_range"] = self.camera.get_offsetX_range()
+        parameters["offsetY"] = self.camera.get_offsetY()
+        parameters["offsetY_range"] = self.camera.get_offsetY_range()
+        return parameters
 
     @pyqtSlot()
     def disconnect_camera(self):
@@ -75,10 +94,14 @@ class Worker(QObject):
     @pyqtSlot(int)
     def change_width(self, value: float):
         self.camera.set_width(value)
+        parameters = self.get_offset_range()
+        self.offsetRangeUpdated.emit(parameters)
 
     @pyqtSlot(int)
     def change_height(self, value: float):
         self.camera.set_height(value)
+        parameters = self.get_offset_range()
+        self.offsetRangeUpdated.emit(parameters)
 
     @pyqtSlot(int)
     def change_offsetX(self, value: float):

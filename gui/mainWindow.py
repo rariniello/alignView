@@ -19,6 +19,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
     request_image = pyqtSignal()
     disconnect = pyqtSignal()
     signal_stop_streaming = pyqtSignal()
+    request_parameters = pyqtSignal()
+    request_offset_range = pyqtSignal()
 
     def __init__(self, parent=None, icon=None):
         super().__init__(parent)
@@ -55,7 +57,6 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.disconnectButton.clicked.connect(self.disconnect_camera)
         self.startButton.clicked.connect(self.start_streaming)
         self.stopButton.clicked.connect(self.stop_streaming)
-        self.widthField.valueChanged.connect(self.update_ranges)
 
     def setup_plot(self):
         view = self.imageView.getView()
@@ -113,9 +114,15 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         # Connect signals and slots between the worker and the gui
         self.disconnect.connect(self.worker.disconnect_camera)
         self.request_image.connect(self.worker.get_image)
+        self.request_parameters.connect(self.worker.get_parameters)
+        self.request_offset_range.connect(self.worker.get_offset_range)
         self.signal_stop_streaming.connect(self.worker.stop_streaming)
+
         self.worker.update.connect(self.doUpdate)
         self.worker.connected.connect(self.onConnect)
+        self.worker.parametersUpdated.connect(self.onParametersUpdated)
+        self.worker.offsetRangeUpdated.connect(self.onOffsetRangeUpdated)
+
         self.exposureField.valueChanged.connect(self.worker.change_exposure)
         self.gainField.valueChanged.connect(self.worker.change_gain)
         self.widthField.valueChanged.connect(self.worker.change_width)
@@ -160,6 +167,10 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.offsetXField.setEnabled(True)
         self.offsetYField.setEnabled(True)
 
+        self.onParametersUpdated(parameters)
+
+    @pyqtSlot(dict)
+    def onParametersUpdated(self, parameters):
         self.exposureField.setValue(parameters["exposure"])
         self.exposureField.setMinimum(parameters["exposure_range"][0])
         self.exposureField.setMaximum(parameters["exposure_range"][1])
@@ -184,6 +195,16 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.offsetYField.setMinimum(parameters["offsetY_range"][0])
         self.offsetYField.setMaximum(parameters["offsetY_range"][1])
         print(parameters)
+
+    @pyqtSlot(dict)
+    def onOffsetRangeUpdated(self, parameters):
+        self.offsetXField.setValue(parameters["offsetX"])
+        self.offsetXField.setMinimum(parameters["offsetX_range"][0])
+        self.offsetXField.setMaximum(parameters["offsetX_range"][1])
+
+        self.offsetYField.setValue(parameters["offsetY"])
+        self.offsetYField.setMinimum(parameters["offsetY_range"][0])
+        self.offsetYField.setMaximum(parameters["offsetY_range"][1])
 
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
@@ -242,3 +263,6 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
             self.imageView.setImage(
                 img.T, autoRange=False, autoLevels=False, autoHistogramRange=False
             )
+
+    def do_request_parameters(self):
+        self.request_parameters.emit()
