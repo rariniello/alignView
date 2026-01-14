@@ -76,6 +76,8 @@ class Worker(QObject):
 
     def process_image(self, img):
         # Any image processing necessary
+        proj_x = np.sum(img, axis=0)
+        proj_y = np.sum(img, axis=1)
         self.update.emit(img)
 
     @pyqtSlot(float)

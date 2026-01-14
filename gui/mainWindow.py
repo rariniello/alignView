@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+import pyqtgraph as pg
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QFileDialog, QMainWindow
 
@@ -25,7 +26,6 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
     def __init__(self, parent=None, icon=None):
         super().__init__(parent)
         self.serial_number = None
-        self.cam = None
         self.streamig = False
         self.first_image = True
         self.lastTime = time.time()
@@ -40,6 +40,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.select_backend()
         self.connect_signal_slots()
         self.setup_plot()
+        self.add_crosshairs()
         self.refresh_camera_list()
 
     def select_backend(self):
@@ -57,25 +58,59 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.disconnectButton.clicked.connect(self.disconnect_camera)
         self.startButton.clicked.connect(self.start_streaming)
         self.stopButton.clicked.connect(self.stop_streaming)
+        self.bitDepthField.valueChanged.connect(self.on_change_bit_depth)
+        self.normalizeCheckBox.checkStateChanged.connect(self.on_normalize_check)
+        self.targetCosshairCheckBox.checkStateChanged.connect(
+            self.toggle_target_crosshair
+        )
+        self.beamCenterCheckBox.checkStateChanged.connect(
+            self.toggle_centroid_crosshair
+        )
+        self.targetXField.valueChanged.connect(self.set_target_crosshair_x)
+        self.targetYField.valueChanged.connect(self.set_target_crosshair_y)
 
     def setup_plot(self):
         view = self.imageView.getView()
         view.disableAutoRange()
         hist = self.imageView.getHistogramWidget()
-        hist.setLevels(0.0, self.max_level)
-        hist.setHistogramRange(0.0, self.max_level, 0.0)
         hist.vb.enableAutoRange("y", False)
-        hist.vb.setLimits(yMin=0.0, yMax=self.max_level, minYRange=10)
+        self.set_hist_range(self.max_level)
         hist.sigLevelsChanged.connect(self.on_levels_changed)
         # hist.vb.setLogMode("x", True)
 
-    def on_levels_changed(self, hist):
-        min_level, max_level = hist.getLevels()
-        if max_level > self.max_level:
-            max_level = self.max_level
-        if min_level < 0.0:
-            min_level = 0.0
-        hist.setLevels(min_level, max_level)
+    def set_hist_range(self, max):
+        self.max_level = max
+        hist = self.imageView.getHistogramWidget()
+        hist.setLevels(0.0, self.max_level)
+        hist.setHistogramRange(0.0, self.max_level, 0.0)
+        hist.vb.setLimits(yMin=0.0, yMax=self.max_level, minYRange=10)
+
+    def add_crosshairs(self):
+        self.targetVLine = pg.InfiniteLine(
+            angle=90, movable=False, pen=pg.mkPen("m", width=1.0)
+        )
+        self.targetHLine = pg.InfiniteLine(
+            angle=0, movable=False, pen=pg.mkPen("m", width=1.0)
+        )
+        self.targetVLine.setPos(0)
+        self.targetHLine.setPos(0)
+        self.imageView.addItem(self.targetVLine)
+        self.imageView.addItem(self.targetHLine)
+        self.targetVLine.setVisible(False)
+        self.targetHLine.setVisible(False)
+
+        self.centroidVLine = pg.InfiniteLine(
+            angle=90, movable=False, pen=pg.mkPen("g", width=1.0)
+        )
+        self.centroidHLine = pg.InfiniteLine(
+            angle=0, movable=False, pen=pg.mkPen("g", width=1.0)
+        )
+        self.centroidVLine.setPos(0)
+        self.centroidHLine.setPos(0)
+        self.imageView.addItem(self.centroidVLine)
+        self.imageView.addItem(self.centroidHLine)
+        self.centroidVLine.setVisible(False)
+        self.centroidHLine.setVisible(False)
 
     # Methods for connecting and disconnecting the camera
     # -----------------------------------------------------------------
@@ -85,7 +120,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         serial_numbers = self.enumerate_devices.get_serial_numbers()
         names = self.enumerate_devices.get_names()
         N = len(serial_numbers)
-        if N > 0:
+        if N > 0 and (self.serial_number is None):
             self.connectButton.setEnabled(True)
         for i in range(N):
             self.cameraSelectField.addItem(
@@ -135,7 +170,6 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
     def disconnect_camera(self):
         self.serial_number = None
-        self.cam = None
         self.first_image = True
         self.stop_streaming()
         self.disconnect.emit()
@@ -182,10 +216,12 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.widthField.setValue(parameters["width"])
         self.widthField.setMinimum(parameters["width_range"][0])
         self.widthField.setMaximum(parameters["width_range"][1])
+        self.targetXField.setMaximum(parameters["width_range"][1])
 
         self.heightField.setValue(parameters["height"])
         self.heightField.setMinimum(parameters["height_range"][0])
         self.heightField.setMaximum(parameters["height_range"][1])
+        self.targetYField.setMaximum(parameters["height_range"][1])
 
         self.offsetXField.setValue(parameters["offsetX"])
         self.offsetXField.setMinimum(parameters["offsetX_range"][0])
@@ -263,6 +299,56 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
             self.imageView.setImage(
                 img.T, autoRange=False, autoLevels=False, autoHistogramRange=False
             )
+        if self.normalizeCheckBox.isChecked():
+            self.set_hist_range(np.max(img))
+
+    def on_levels_changed(self, hist):
+        # Ensure the histogram limits are enforced if something tries to change them
+        # To change the histogram range, use set_hist_range()
+        min_level, max_level = hist.getLevels()
+        if max_level > self.max_level:
+            max_level = self.max_level
+        if min_level < 0.0:
+            min_level = 0.0
+        hist.setLevels(min_level, max_level)
 
     def do_request_parameters(self):
         self.request_parameters.emit()
+
+    @pyqtSlot(int)
+    def on_change_bit_depth(self, value):
+        max_level = int(2**value)
+        self.set_hist_range(max_level)
+
+    @pyqtSlot()
+    def on_normalize_check(self):
+        if self.normalizeCheckBox.isChecked():
+            self.bitDepthField.setEnabled(False)
+        else:
+            self.bitDepthField.setEnabled(True)
+
+    @pyqtSlot()
+    def toggle_target_crosshair(self):
+        if self.targetCosshairCheckBox.isChecked():
+            self.targetVLine.setVisible(True)
+            self.targetHLine.setVisible(True)
+        else:
+            self.targetVLine.setVisible(False)
+            self.targetHLine.setVisible(False)
+
+    @pyqtSlot()
+    def toggle_centroid_crosshair(self):
+        if self.beamCenterCheckBox.isChecked():
+            self.centroidVLine.setVisible(True)
+            self.centroidHLine.setVisible(True)
+        else:
+            self.centroidVLine.setVisible(False)
+            self.centroidHLine.setVisible(False)
+
+    def set_target_crosshair_x(self, tx):
+        self.targetXField.setValue(tx)
+        self.targetVLine.setPos(tx + 0.5)
+
+    def set_target_crosshair_y(self, ty):
+        self.targetYField.setValue(ty)
+        self.targetHLine.setPos(ty + 0.5)
