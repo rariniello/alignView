@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 from pypylon import pylon
 
 # Run the file directly to test Basler SDK

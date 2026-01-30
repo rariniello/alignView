@@ -1,10 +1,13 @@
 import numpy as np
 from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
+from scipy import optimize
+
+import analysis.image as an
 
 
 class Worker(QObject):
     finished = pyqtSignal()
-    update = pyqtSignal(np.ndarray)
+    update = pyqtSignal(dict)
     connected = pyqtSignal(dict)
     connectionFailed = pyqtSignal()
     parametersUpdated = pyqtSignal(dict)
@@ -14,6 +17,11 @@ class Worker(QObject):
         super().__init__()
         self.serial_number = serial_number
         self.camera_class = camera_class
+        self.previousPx = None
+        self.previousPy = None
+        self.sx = None
+        self.sy = None
+        self.config = {}
 
     @pyqtSlot()
     def connect_camera(self):
@@ -25,7 +33,11 @@ class Worker(QObject):
             return
 
         parameters = self._get_parameters()
+        self.sx = parameters["offsetX"]
+        self.sy = parameters["offsetY"]
         self.connected.emit(parameters)
+        self.camera.offsetX_changed.connect(self.update_offsetX)
+        self.camera.offsetY_changed.connect(self.update_offsetY)
 
     @pyqtSlot()
     def get_parameters(self):
@@ -75,10 +87,19 @@ class Worker(QObject):
         self.process_image(img)
 
     def process_image(self, img):
+        data = {}
         # Any image processing necessary
-        proj_x = np.sum(img, axis=0)
-        proj_y = np.sum(img, axis=1)
-        self.update.emit(img)
+        x, y = an.get_xy_arrays(img, self.sx, self.sy)
+        centroid, px, py, x_proj, y_proj = an.findImageCenter(
+            img, x, y, self.config, self.previousPx, self.previousPy
+        )
+        self.previousPx = px
+        self.previousPy = py
+        data["image"] = img
+        data["x_proj"] = x_proj
+        data["y_proj"] = y_proj
+        data["centroid"] = centroid
+        self.update.emit(data)
 
     @pyqtSlot(float)
     def change_exposure(self, value: float):
@@ -108,7 +129,16 @@ class Worker(QObject):
     @pyqtSlot(int)
     def change_offsetX(self, value: float):
         self.camera.set_offsetX(value)
+        self.sx = value
 
     @pyqtSlot(int)
     def change_offsetY(self, value: float):
         self.camera.set_offsetY(value)
+
+    @pyqtSlot(int)
+    def update_offsetX(self, value):
+        self.sx = value
+
+    @pyqtSlot(int)
+    def update_offsetY(self, value):
+        self.sy = value

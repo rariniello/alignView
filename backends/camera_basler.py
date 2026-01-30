@@ -9,9 +9,9 @@ class Basler(QObject):
     exposure_changed = pyqtSignal(float)
     gain_changed = pyqtSignal(float)
     width_changed = pyqtSignal(int)
-    height_changed = pyqtSignal(float)
-    offsetX_changed = pyqtSignal(float)
-    offsetY_changed = pyqtSignal(float)
+    height_changed = pyqtSignal(int)
+    offsetX_changed = pyqtSignal(int)
+    offsetY_changed = pyqtSignal(int)
 
     def __init__(self, serial_number):
         super().__init__()

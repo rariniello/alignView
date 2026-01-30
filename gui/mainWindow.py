@@ -68,6 +68,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         )
         self.targetXField.valueChanged.connect(self.set_target_crosshair_x)
         self.targetYField.valueChanged.connect(self.set_target_crosshair_y)
+        self.markBeamButton.clicked.connect(self.mark_beam)
 
     def setup_plot(self):
         view = self.imageView.getView()
@@ -244,11 +245,11 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
-    @pyqtSlot(np.ndarray)
-    def doUpdate(self, img):
+    @pyqtSlot(dict)
+    def doUpdate(self, data):
         """Updates the plot/gui when a new image is recieved."""
         # self.img = img
-        self.update_plot(img)
+        self.update_plot(data)
         if self.streaming:
             self.request_image.emit()
         self.printFramerate()
@@ -289,7 +290,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.widthField.setEnabled(True)
         self.heightField.setEnabled(True)
 
-    def update_plot(self, img):
+    def update_plot(self, data):
+        img = data["image"]
         if self.first_image:
             self.imageView.setImage(
                 img.T, autoRange=True, autoLevels=False, autoHistogramRange=False
@@ -301,6 +303,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
             )
         if self.normalizeCheckBox.isChecked():
             self.set_hist_range(np.max(img))
+        self.set_centroid_crosshair_x(data["centroid"][0])
+        self.set_centroid_crosshair_y(data["centroid"][1])
 
     def on_levels_changed(self, hist):
         # Ensure the histogram limits are enforced if something tries to change them
@@ -352,3 +356,14 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
     def set_target_crosshair_y(self, ty):
         self.targetYField.setValue(ty)
         self.targetHLine.setPos(ty + 0.5)
+
+    def set_centroid_crosshair_x(self, cx):
+        self.centroidVLine.setPos(cx)
+
+    def set_centroid_crosshair_y(self, cy):
+        self.centroidHLine.setPos(cy)
+
+    @pyqtSlot()
+    def mark_beam(self):
+        self.set_target_crosshair_x(self.centroidVLine.getPos()[0])
+        self.set_target_crosshair_y(self.centroidHLine.getPos()[1])
