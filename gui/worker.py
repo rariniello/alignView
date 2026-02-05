@@ -33,8 +33,10 @@ class Worker(QObject):
             return
 
         parameters = self._get_parameters()
-        self.sx = parameters["offsetX"]
-        self.sy = parameters["offsetY"]
+        # self.sx = parameters["offsetX"]
+        # self.sy = parameters["offsetY"]
+        self.sx = 0
+        self.sy = 0
         self.connected.emit(parameters)
         self.camera.offsetX_changed.connect(self.update_offsetX)
         self.camera.offsetY_changed.connect(self.update_offsetY)
@@ -129,16 +131,19 @@ class Worker(QObject):
     @pyqtSlot(int)
     def change_offsetX(self, value: float):
         self.camera.set_offsetX(value)
-        self.sx = value
+        # self.sx = value
 
     @pyqtSlot(int)
     def change_offsetY(self, value: float):
         self.camera.set_offsetY(value)
+        # self.sy = value
 
     @pyqtSlot(int)
     def update_offsetX(self, value):
-        self.sx = value
+        # self.sx = value
+        pass
 
     @pyqtSlot(int)
     def update_offsetY(self, value):
-        self.sy = value
+        # self.sy = value
+        pass
