@@ -12,6 +12,7 @@ class Worker(QObject):
     connectionFailed = pyqtSignal()
     parametersUpdated = pyqtSignal(dict)
     offsetRangeUpdated = pyqtSignal(dict)
+    binningUpdated = pyqtSignal(dict)
 
     def __init__(self, serial_number, camera_class):
         super().__init__()
@@ -40,6 +41,7 @@ class Worker(QObject):
         self.connected.emit(parameters)
         self.camera.offsetX_changed.connect(self.update_offsetX)
         self.camera.offsetY_changed.connect(self.update_offsetY)
+        self.camera.image_grabbed.connect(self.on_new_image)
 
     @pyqtSlot()
     def get_parameters(self):
@@ -60,6 +62,20 @@ class Worker(QObject):
         parameters["offsetX_range"] = self.camera.get_offsetX_range()
         parameters["offsetY"] = self.camera.get_offsetY()
         parameters["offsetY_range"] = self.camera.get_offsetY_range()
+        parameters["exposure_mode"] = self.camera.get_exposure_mode()
+        parameters["exposure_mode_options"] = self.camera.enumerate_exposure_mode()
+        parameters["trigger_mode"] = self.camera.get_trigger_mode()
+        parameters["trigger_mode_options"] = self.camera.enumerate_trigger_mode()
+        parameters["trigger_source"] = self.camera.get_trigger_source()
+        parameters["trigger_source_options"] = self.camera.enumerate_trigger_source()
+        parameters["pixel_format"] = self.camera.get_pixel_format()
+        parameters["pixel_format_options"] = self.camera.enumerate_pixel_format()
+        parameters["binning_horizontal"] = self.camera.get_binning_horizontal()
+        parameters["binning_horizontal_range"] = (
+            self.camera.get_binning_horizontal_range()
+        )
+        parameters["binning_vertical"] = self.camera.get_binning_vertical()
+        parameters["binning_vertical_range"] = self.camera.get_binning_vertical_range()
         return parameters
 
     def get_offset_range(self):
@@ -68,6 +84,18 @@ class Worker(QObject):
         parameters["offsetX_range"] = self.camera.get_offsetX_range()
         parameters["offsetY"] = self.camera.get_offsetY()
         parameters["offsetY_range"] = self.camera.get_offsetY_range()
+        return parameters
+
+    def get_offset_and_size(self):
+        parameters = {}
+        parameters["offsetX"] = self.camera.get_offsetX()
+        parameters["offsetX_range"] = self.camera.get_offsetX_range()
+        parameters["offsetY"] = self.camera.get_offsetY()
+        parameters["offsetY_range"] = self.camera.get_offsetY_range()
+        parameters["width"] = self.camera.get_width()
+        parameters["width_range"] = self.camera.get_width_range()
+        parameters["height"] = self.camera.get_height()
+        parameters["height_range"] = self.camera.get_height_range()
         return parameters
 
     @pyqtSlot()
@@ -82,11 +110,15 @@ class Worker(QObject):
     def stop_streaming(self):
         self.camera.stop_streaming()
 
-    @pyqtSlot()
-    def get_image(self):
-        """Retrieve the image from the camera."""
-        img = self.camera.get_image()
-        self.process_image(img)
+    # @pyqtSlot()
+    # def get_image(self):
+    #     """Retrieve the image from the camera."""
+    #     img = self.camera.get_image()
+    #     self.process_image(img)
+
+    @pyqtSlot(dict)
+    def on_new_image(self, data):
+        self.process_image(data["image"])
 
     def process_image(self, img):
         data = {}
@@ -123,18 +155,18 @@ class Worker(QObject):
         self.offsetRangeUpdated.emit(parameters)
 
     @pyqtSlot(int)
-    def change_height(self, value: float):
+    def change_height(self, value: int):
         self.camera.set_height(value)
         parameters = self.get_offset_range()
         self.offsetRangeUpdated.emit(parameters)
 
     @pyqtSlot(int)
-    def change_offsetX(self, value: float):
+    def change_offsetX(self, value: int):
         self.camera.set_offsetX(value)
         # self.sx = value
 
     @pyqtSlot(int)
-    def change_offsetY(self, value: float):
+    def change_offsetY(self, value: int):
         self.camera.set_offsetY(value)
         # self.sy = value
 
@@ -147,3 +179,31 @@ class Worker(QObject):
     def update_offsetY(self, value):
         # self.sy = value
         pass
+
+    @pyqtSlot(str)
+    def change_trigger_mode(self, value):
+        self.camera.set_trigger_mode(value)
+
+    @pyqtSlot(str)
+    def change_trigger_source(self, value):
+        self.camera.set_trigger_source(value)
+
+    @pyqtSlot(str)
+    def change_exposure_mode(self, value):
+        self.camera.set_exposure_mode(value)
+
+    @pyqtSlot(str)
+    def change_pixel_format(self, value):
+        self.camera.set_pixel_format(value)
+
+    @pyqtSlot(int)
+    def change_binning_horizontal(self, value: int):
+        self.camera.set_binning_horizontal(value)
+        parameters = self.get_offset_and_size()
+        self.binningUpdated.emit(parameters)
+
+    @pyqtSlot(int)
+    def change_binning_vertical(self, value: int):
+        self.camera.set_binning_vertical(value)
+        parameters = self.get_offset_and_size()
+        self.binningUpdated.emit(parameters)

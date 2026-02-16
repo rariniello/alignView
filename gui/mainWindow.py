@@ -35,12 +35,14 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.i_elapsed = 0
 
         self.max_level = 4096
+        self.centroid = np.zeros(2)
 
         self.setupUi(self)
         self.select_backend()
         self.connect_signal_slots()
         self.setup_plot()
         self.add_crosshairs()
+        self.add_circles()
         self.refresh_camera_list()
 
     def select_backend(self):
@@ -69,6 +71,10 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.targetXField.valueChanged.connect(self.set_target_crosshair_x)
         self.targetYField.valueChanged.connect(self.set_target_crosshair_y)
         self.markBeamButton.clicked.connect(self.mark_beam)
+        self.targetCircleCheckBox.checkStateChanged.connect(self.toggle_target_circle)
+        self.beamCircleCheckBox.checkStateChanged.connect(self.toggle_centroid_circle)
+        self.targetCircleSizeField.valueChanged.connect(self.set_target_circle_size)
+        self.beamCircleSizeField.valueChanged.connect(self.set_centroid_circle_size)
 
     def setup_plot(self):
         view = self.imageView.getView()
@@ -113,6 +119,31 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.centroidVLine.setVisible(False)
         self.centroidHLine.setVisible(False)
 
+    def add_circles(self):
+        r_target = self.targetCircleSizeField.value()
+        self.target_circle = pg.CircleROI(
+            pos=(-r_target + 0.5, -r_target + 0.5),
+            size=(r_target * 2, r_target * 2),
+            pen=pg.mkPen("m", width=1.0),
+            movable=False,
+            resizable=False,
+        )
+        self.imageView.addItem(self.target_circle)
+        self.target_circle.removeHandle(0)
+        self.target_circle.setVisible(False)
+
+        r_centroid = self.beamCircleSizeField.value()
+        self.centroid_circle = pg.CircleROI(
+            pos=(-r_centroid + 0.5, -r_centroid + 0.5),
+            size=(r_centroid * 2, r_centroid * 2),
+            pen=pg.mkPen("g", width=1.0),
+            movable=False,
+            resizable=False,
+        )
+        self.imageView.addItem(self.centroid_circle)
+        self.centroid_circle.removeHandle(0)
+        self.centroid_circle.setVisible(False)
+
     # Methods for connecting and disconnecting the camera
     # -----------------------------------------------------------------
     def refresh_camera_list(self):
@@ -149,7 +180,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
         # Connect signals and slots between the worker and the gui
         self.disconnect.connect(self.worker.disconnect_camera)
-        self.request_image.connect(self.worker.get_image)
+        # self.request_image.connect(self.worker.get_image)
         self.request_parameters.connect(self.worker.get_parameters)
         self.request_offset_range.connect(self.worker.get_offset_range)
         self.signal_stop_streaming.connect(self.worker.stop_streaming)
@@ -157,7 +188,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.worker.update.connect(self.doUpdate)
         self.worker.connected.connect(self.onConnect)
         self.worker.parametersUpdated.connect(self.onParametersUpdated)
-        self.worker.offsetRangeUpdated.connect(self.onOffsetRangeUpdated)
+        self.worker.offsetRangeUpdated.connect(self.update_offset)
+        self.worker.binningUpdated.connect(self.update_size_and_offset)
 
         self.exposureField.valueChanged.connect(self.worker.change_exposure)
         self.gainField.valueChanged.connect(self.worker.change_gain)
@@ -165,6 +197,24 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.heightField.valueChanged.connect(self.worker.change_height)
         self.offsetXField.valueChanged.connect(self.worker.change_offsetX)
         self.offsetYField.valueChanged.connect(self.worker.change_offsetY)
+        self.exposureModeField.currentTextChanged.connect(
+            self.worker.change_exposure_mode
+        )
+        self.triggerModeField.currentTextChanged.connect(
+            self.worker.change_trigger_mode
+        )
+        self.triggerSourceField.currentTextChanged.connect(
+            self.worker.change_trigger_source
+        )
+        self.pixelFormatField.currentTextChanged.connect(
+            self.worker.change_pixel_format
+        )
+        self.binningHorizontalField.valueChanged.connect(
+            self.worker.change_binning_horizontal
+        )
+        self.binningVerticalField.valueChanged.connect(
+            self.worker.change_binning_vertical
+        )
 
         # Start the thread and set initial spectrometer parameters
         self.thread.start()
@@ -185,6 +235,12 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.heightField.setEnabled(False)
         self.offsetXField.setEnabled(False)
         self.offsetYField.setEnabled(False)
+        self.triggerModeField.setEnabled(False)
+        self.triggerSourceField.setEnabled(False)
+        self.exposureModeField.setEnabled(False)
+        self.pixelFormatField.setEnabled(False)
+        self.binningHorizontalField.setEnabled(False)
+        self.binningVerticalField.setEnabled(False)
 
     @pyqtSlot(dict)
     def onConnect(self, parameters):
@@ -201,6 +257,12 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.heightField.setEnabled(True)
         self.offsetXField.setEnabled(True)
         self.offsetYField.setEnabled(True)
+        self.triggerModeField.setEnabled(True)
+        self.triggerSourceField.setEnabled(True)
+        self.exposureModeField.setEnabled(True)
+        self.pixelFormatField.setEnabled(True)
+        self.binningHorizontalField.setEnabled(True)
+        self.binningVerticalField.setEnabled(True)
 
         self.onParametersUpdated(parameters)
 
@@ -214,6 +276,58 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.gainField.setMinimum(parameters["gain_range"][0])
         self.gainField.setMaximum(parameters["gain_range"][1])
 
+        self.update_size_and_offset(parameters)
+
+        self.triggerModeField.blockSignals(True)
+        self.triggerModeField.clear()
+        self.triggerModeField.addItems(parameters["trigger_mode_options"])
+        self.triggerModeField.setCurrentText(parameters["trigger_mode"])
+        self.triggerModeField.blockSignals(False)
+
+        self.triggerSourceField.blockSignals(True)
+        self.triggerSourceField.clear()
+        self.triggerSourceField.addItems(parameters["trigger_source_options"])
+        self.triggerSourceField.setCurrentText(parameters["trigger_source"])
+        self.triggerSourceField.blockSignals(False)
+
+        self.exposureModeField.blockSignals(True)
+        self.exposureModeField.clear()
+        self.exposureModeField.addItems(parameters["exposure_mode_options"])
+        self.exposureModeField.setCurrentText(parameters["exposure_mode"])
+        self.exposureModeField.blockSignals(False)
+
+        self.pixelFormatField.blockSignals(True)
+        self.pixelFormatField.clear()
+        self.pixelFormatField.addItems(parameters["pixel_format_options"])
+        self.pixelFormatField.setCurrentText(parameters["pixel_format"])
+        self.pixelFormatField.blockSignals(False)
+
+        self.binningHorizontalField.setValue(parameters["binning_horizontal"])
+        self.binningHorizontalField.setMinimum(
+            parameters["binning_horizontal_range"][0]
+        )
+        self.binningHorizontalField.setMaximum(
+            parameters["binning_horizontal_range"][1]
+        )
+
+        self.binningVerticalField.setValue(parameters["binning_vertical"])
+        self.binningVerticalField.setMinimum(parameters["binning_vertical_range"][0])
+        self.binningVerticalField.setMaximum(parameters["binning_vertical_range"][1])
+
+        print(parameters)
+
+    @pyqtSlot(dict)
+    def update_offset(self, parameters):
+        self.offsetXField.setValue(parameters["offsetX"])
+        self.offsetXField.setMinimum(parameters["offsetX_range"][0])
+        self.offsetXField.setMaximum(parameters["offsetX_range"][1])
+
+        self.offsetYField.setValue(parameters["offsetY"])
+        self.offsetYField.setMinimum(parameters["offsetY_range"][0])
+        self.offsetYField.setMaximum(parameters["offsetY_range"][1])
+
+    @pyqtSlot(dict)
+    def update_size_and_offset(self, parameters):
         self.widthField.setValue(parameters["width"])
         self.widthField.setMinimum(parameters["width_range"][0])
         self.widthField.setMaximum(parameters["width_range"][1])
@@ -224,24 +338,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.heightField.setMaximum(parameters["height_range"][1])
         self.targetYField.setMaximum(parameters["height_range"][1])
 
-        self.offsetXField.setValue(parameters["offsetX"])
-        self.offsetXField.setMinimum(parameters["offsetX_range"][0])
-        self.offsetXField.setMaximum(parameters["offsetX_range"][1])
-
-        self.offsetYField.setValue(parameters["offsetY"])
-        self.offsetYField.setMinimum(parameters["offsetY_range"][0])
-        self.offsetYField.setMaximum(parameters["offsetY_range"][1])
-        print(parameters)
-
-    @pyqtSlot(dict)
-    def onOffsetRangeUpdated(self, parameters):
-        self.offsetXField.setValue(parameters["offsetX"])
-        self.offsetXField.setMinimum(parameters["offsetX_range"][0])
-        self.offsetXField.setMaximum(parameters["offsetX_range"][1])
-
-        self.offsetYField.setValue(parameters["offsetY"])
-        self.offsetYField.setMinimum(parameters["offsetY_range"][0])
-        self.offsetYField.setMaximum(parameters["offsetY_range"][1])
+        self.update_offset(parameters)
 
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
@@ -250,8 +347,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         """Updates the plot/gui when a new image is recieved."""
         # self.img = img
         self.update_plot(data)
-        if self.streaming:
-            self.request_image.emit()
+        # if self.streaming:
+        #     self.request_image.emit()
         self.printFramerate()
 
     def printFramerate(self):
@@ -273,11 +370,14 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         """Starts streaming images from the camera."""
         self.streaming = True
         self.worker.start_streaming()
-        self.request_image.emit()
+        # self.request_image.emit()
         self.stopButton.setEnabled(True)
         self.startButton.setEnabled(False)
         self.widthField.setEnabled(False)
         self.heightField.setEnabled(False)
+        self.binningHorizontalField.setEnabled(False)
+        self.binningVerticalField.setEnabled(False)
+        self.pixelFormatField.setEnabled(False)
 
     @pyqtSlot()
     def stop_streaming(self):
@@ -289,9 +389,13 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.startButton.setEnabled(True)
         self.widthField.setEnabled(True)
         self.heightField.setEnabled(True)
+        self.binningHorizontalField.setEnabled(True)
+        self.binningVerticalField.setEnabled(True)
+        self.pixelFormatField.setEnabled(True)
 
     def update_plot(self, data):
         img = data["image"]
+        self.centroid = data["centroid"]
         if self.first_image:
             self.imageView.setImage(
                 img.T, autoRange=True, autoLevels=False, autoHistogramRange=False
@@ -349,19 +453,59 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
             self.centroidVLine.setVisible(False)
             self.centroidHLine.setVisible(False)
 
+    @pyqtSlot()
+    def toggle_target_circle(self):
+        if self.targetCircleCheckBox.isChecked():
+            self.target_circle.setVisible(True)
+        else:
+            self.target_circle.setVisible(False)
+
+    @pyqtSlot()
+    def toggle_centroid_circle(self):
+        if self.beamCircleCheckBox.isChecked():
+            self.centroid_circle.setVisible(True)
+        else:
+            self.centroid_circle.setVisible(False)
+
+    def set_target_circle_size(self, size):
+        self.target_circle.setSize(2 * size, 2 * size)
+        self.set_target_crosshair_x(self.targetXField.value())
+        self.set_target_crosshair_y(self.targetYField.value())
+
+    def set_centroid_circle_size(self, size):
+        self.centroid_circle.setSize(2 * size, 2 * size)
+        self.set_centroid_crosshair_x(self.centroid[0])
+        self.set_centroid_crosshair_y(self.centroid[1])
+
     def set_target_crosshair_x(self, tx):
         self.targetXField.setValue(tx)
         self.targetVLine.setPos(tx + 0.5)
+
+        pos = self.target_circle.pos()
+        size = self.target_circle.size()
+        self.target_circle.setPos(tx + 0.5 - 0.5 * size[0], pos[1])
 
     def set_target_crosshair_y(self, ty):
         self.targetYField.setValue(ty)
         self.targetHLine.setPos(ty + 0.5)
 
+        pos = self.target_circle.pos()
+        size = self.target_circle.size()
+        self.target_circle.setPos(pos[0], ty + 0.5 - 0.5 * size[1])
+
     def set_centroid_crosshair_x(self, cx):
         self.centroidVLine.setPos(cx)
 
+        pos = self.centroid_circle.pos()
+        size = self.centroid_circle.size()
+        self.centroid_circle.setPos(cx - 0.5 * size[0], pos[1])
+
     def set_centroid_crosshair_y(self, cy):
         self.centroidHLine.setPos(cy)
+
+        pos = self.centroid_circle.pos()
+        size = self.centroid_circle.size()
+        self.centroid_circle.setPos(pos[0], cy - 0.5 * size[1])
 
     @pyqtSlot()
     def mark_beam(self):

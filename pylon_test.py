@@ -23,8 +23,15 @@ if __name__ == "__main__":
     camera = pylon.InstantCamera(tlFactory.CreateDevice(info))
     camera.Open()
 
-    print(camera.ExposureTime.Value)
-    print(camera.ExposureTime.Max)
+    # print(camera.ExposureTime.Value)
+    # print(camera.ExposureTime.Max)
+
+    print(camera.TriggerSource.Symbolics)
+    print(camera.TriggerSource.Value)
+    print(camera.TriggerMode.Symbolics)
+    print(camera.ExposureMode.Symbolics)
+
+    print(camera.BinningHorizontal.Value)
 
     # camera.Open()
     # print("Using device ", camera.GetDeviceInfo().GetModelName())

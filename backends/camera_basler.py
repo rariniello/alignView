@@ -1,7 +1,21 @@
+import numpy as np
 from pypylon import genicam, pylon
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from interfaces import camera_interface
+
+
+class ImageEventHandler(QObject, pylon.ImageEventHandler):
+    imageGrabbedSignal = pyqtSignal(dict)
+
+    def OnImageGrabbed(self, camera, grabResult):
+        if grabResult.GrabSucceeded():
+            data = {"image": grabResult.GetArray()}
+            self.imageGrabbedSignal.emit(data)
+        else:
+            print(
+                "Error: ", grabResult.GetErrorCode(), grabResult.GetErrorDescription()
+            )
 
 
 class Basler(QObject):
@@ -12,6 +26,9 @@ class Basler(QObject):
     height_changed = pyqtSignal(int)
     offsetX_changed = pyqtSignal(int)
     offsetY_changed = pyqtSignal(int)
+    binning_horizontal_changed = pyqtSignal(int)
+    binning_vertical_changed = pyqtSignal(int)
+    image_grabbed = pyqtSignal(dict)
 
     def __init__(self, serial_number):
         super().__init__()
@@ -30,28 +47,46 @@ class Basler(QObject):
         genicam.Register(camera.Height.GetNode(), self._on_height_change)
         genicam.Register(camera.OffsetX.GetNode(), self._on_offsetX_change)
         genicam.Register(camera.OffsetY.GetNode(), self._on_offsetY_change)
+        genicam.Register(
+            camera.BinningHorizontal.GetNode(), self._on_binning_horizontal_change
+        )
+        genicam.Register(
+            camera.BinningVertical.GetNode(), self._on_binning_vertical_change
+        )
+        self.eventHandler = ImageEventHandler()
+        self.image_grabbed = self.eventHandler.imageGrabbedSignal
+        camera.RegisterImageEventHandler(
+            self.eventHandler,
+            pylon.RegistrationMode_Append,
+            pylon.Cleanup_Delete,
+        )
 
     def close(self):
         self.camera.Close()
 
     def start_streaming(self):
-        self.camera.StartGrabbing()
+        self.camera.StartGrabbing(
+            pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera
+        )
 
     def stop_streaming(self):
         self.camera.StopGrabbing()
 
-    def get_image(self):
-        # Use a 10sec timeout
-        grabResult = self.camera.RetrieveResult(
-            10000, pylon.TimeoutHandling_ThrowException
-        )
-        if grabResult.GrabSucceeded():
-            img = grabResult.Array
-        else:
-            print("Error: ", grabResult.ErrorCode, grabResult.ErrorDescription)
-        grabResult.Release()
-        return img
+    # XXX Should not be used when using the grabbing thread
+    # def get_image(self):
+    #     # Use a 10sec timeout
+    #     grabResult = self.camera.RetrieveResult(
+    #         10000, pylon.TimeoutHandling_ThrowException
+    #     )
+    #     if grabResult.GrabSucceeded():
+    #         img = grabResult.Array
+    #     else:
+    #         print("Error: ", grabResult.ErrorCode, grabResult.ErrorDescription)
+    #     grabResult.Release()
+    #     return img
 
+    # Exposure
+    # -----------------------------------------------------------------
     def set_exposure(self, value):
         self.camera.ExposureTime.Value = value * 1.0e3
 
@@ -71,6 +106,8 @@ class Basler(QObject):
         except:
             pass
 
+    # Gain
+    # -----------------------------------------------------------------
     def set_gain(self, value):
         self.camera.Gain.Value = value
 
@@ -90,6 +127,8 @@ class Basler(QObject):
         except:
             pass
 
+    # Width
+    # -----------------------------------------------------------------
     def set_width(self, value):
         self.camera.Width.Value = value
 
@@ -109,6 +148,8 @@ class Basler(QObject):
         except:
             pass
 
+    # Height
+    # -----------------------------------------------------------------
     def set_height(self, value):
         self.camera.Height.Value = value
 
@@ -128,6 +169,8 @@ class Basler(QObject):
         except:
             pass
 
+    # Offset X
+    # -----------------------------------------------------------------
     def set_offsetX(self, value):
         self.camera.OffsetX.Value = value
 
@@ -147,6 +190,8 @@ class Basler(QObject):
         except:
             pass
 
+    # Offset Y
+    # -----------------------------------------------------------------
     def set_offsetY(self, value):
         self.camera.OffsetY.Value = value
 
@@ -163,5 +208,89 @@ class Basler(QObject):
     def _on_offsetY_change(self, update):
         try:
             self.offsetY_changed.emit(update.Value)
+        except:
+            pass
+
+    # Exposure Mode
+    # -----------------------------------------------------------------
+    def set_exposure_mode(self, value):
+        self.camera.ExposureMode.Value = value
+
+    def get_exposure_mode(self):
+        return self.camera.ExposureMode.Value
+
+    def enumerate_exposure_mode(self):
+        return self.camera.ExposureMode.Symbolics
+
+    # Trigger Mode
+    # -----------------------------------------------------------------
+    def set_trigger_mode(self, value):
+        self.camera.TriggerMode.Value = value
+
+    def get_trigger_mode(self):
+        return self.camera.TriggerMode.Value
+
+    def enumerate_trigger_mode(self):
+        return self.camera.TriggerMode.Symbolics
+
+    # Trigger Source
+    # -----------------------------------------------------------------
+    def set_trigger_source(self, value):
+        self.camera.TriggerSource.Value = value
+
+    def get_trigger_source(self):
+        return self.camera.TriggerSource.Value
+
+    def enumerate_trigger_source(self):
+        return self.camera.TriggerSource.Symbolics
+
+    # Pixel Format
+    # -----------------------------------------------------------------
+    def set_pixel_format(self, value):
+        self.camera.PixelFormat.Value = value
+
+    def get_pixel_format(self):
+        return self.camera.PixelFormat.Value
+
+    def enumerate_pixel_format(self):
+        return self.camera.PixelFormat.Symbolics
+
+    # Binning Horizontal
+    # -----------------------------------------------------------------
+    def set_binning_horizontal(self, value):
+        self.camera.BinningHorizontal.Value = value
+
+    def get_binning_horizontal(self):
+        return self.camera.BinningHorizontal.Value
+
+    def get_binning_horizontal_range(self):
+        return [
+            self.camera.BinningHorizontal.Min,
+            self.camera.BinningHorizontal.Max,
+        ]
+
+    def _on_binning_horizontal_change(self, update):
+        try:
+            self.binning_horizontal_changed.emit(update.Value)
+        except:
+            pass
+
+    # Binning Vertical
+    # -----------------------------------------------------------------
+    def set_binning_vertical(self, value):
+        self.camera.BinningVertical.Value = value
+
+    def get_binning_vertical(self):
+        return self.camera.BinningVertical.Value
+
+    def get_binning_vertical_range(self):
+        return [
+            self.camera.BinningVertical.Min,
+            self.camera.BinningVertical.Max,
+        ]
+
+    def _on_binning_vertical_change(self, update):
+        try:
+            self.binning_vertical_changed.emit(update.Value)
         except:
             pass
