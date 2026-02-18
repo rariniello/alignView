@@ -4,6 +4,7 @@ import sys
 alignViewPath = None
 savePath = None
 testing = True
+darkMode = False
 
 
 def defPaths():

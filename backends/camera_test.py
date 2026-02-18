@@ -1,7 +1,7 @@
 import time
 
 import numpy as np
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal, pyqtSlot
 
 from interfaces import camera_interface
 
@@ -13,11 +13,14 @@ class ImageGenerator(QObject):
     def __init__(self, camera):
         super().__init__()
         self.camera = camera
-        self.streaming = True
 
     def run(self):
-        while self.streaming:
-            time.sleep(0.05)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.create_image)
+        self.timer.start(100)
+
+    def create_image(self):
+        try:
             x0 = 600 - self.camera._offsetX + int(np.random.normal(0.0, 2.0))
             y0 = 400 - self.camera._offsetY + int(np.random.normal(0.0, 2.0))
             sigma = 50
@@ -37,10 +40,12 @@ class ImageGenerator(QObject):
             img *= np.int_(10 ** (self.camera._gain / 10))
             data = {"image": img}
             self.imageGrabbedSignal.emit(data)
-        self.finished.emit()
+        except:
+            print("Error generating test image")
 
     def stop(self):
-        self.streaming = False
+        self.timer.stop()
+        self.finished.emit()
 
 
 class TestCam(QObject):

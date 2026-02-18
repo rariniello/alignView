@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import pyqtgraph as pg
+from PyQt6 import QtGui
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QFileDialog, QMainWindow
 
@@ -77,12 +78,19 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.beamCircleSizeField.valueChanged.connect(self.set_centroid_circle_size)
 
     def setup_plot(self):
+        plot = pg.PlotItem()
+        # plot.setLabel(axis="left", text="Y-axis Label")
+        # plot.setLabel(axis="bottom", text="X-axis Label")
+        self.imageView = pg.ImageView(view=plot)
+        self.imageViewWidgetLayout.addWidget(self.imageView)
         view = self.imageView.getView()
         view.disableAutoRange()
         hist = self.imageView.getHistogramWidget()
         hist.vb.enableAutoRange("y", False)
         self.set_hist_range(self.max_level)
         hist.sigLevelsChanged.connect(self.on_levels_changed)
+        # cmap = pg.colormap.get("magma")
+        # self.imageView.setColorMap("magma")
         # hist.vb.setLogMode("x", True)
 
     def set_hist_range(self, max):
@@ -190,6 +198,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.worker.parametersUpdated.connect(self.onParametersUpdated)
         self.worker.offsetRangeUpdated.connect(self.update_offset)
         self.worker.binningUpdated.connect(self.update_size_and_offset)
+        self.worker.imageTransformUpdated.connect(self.set_image_transform)
 
         self.exposureField.valueChanged.connect(self.worker.change_exposure)
         self.gainField.valueChanged.connect(self.worker.change_gain)
@@ -340,6 +349,17 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
         self.update_offset(parameters)
 
+    @pyqtSlot(int, int, float, float)
+    def set_image_transform(self, sx, sy, scalex, scaley):
+        print(scalex, scaley)
+        tr = QtGui.QTransform()
+        tr.translate(sx, sy)
+        tr.scale(scalex, scaley)
+        self.imageView.getImageItem().setTransform(tr)
+        # self.imageView.getImageItem().scale(scalex, scaley)
+        # self.imageView.getImageItem().setPos(sx, sy)
+        # self.imageView.getImageItem().setRect(sx, sy, sx + 100, sy + 200)
+
     # Methods for streaming data from the camera
     # -----------------------------------------------------------------
     @pyqtSlot(dict)
@@ -397,13 +417,14 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         img = data["image"]
         self.centroid = data["centroid"]
         if self.first_image:
+            # Set the imageView rather than the imageViewItem to use autoRange on the first image
             self.imageView.setImage(
                 img.T, autoRange=True, autoLevels=False, autoHistogramRange=False
             )
             self.first_image = False
         else:
-            self.imageView.setImage(
-                img.T, autoRange=False, autoLevels=False, autoHistogramRange=False
+            self.imageView.getImageItem().setImage(
+                img.T, autoLevels=False, autoHistogramRange=False
             )
         if self.normalizeCheckBox.isChecked():
             self.set_hist_range(np.max(img))
