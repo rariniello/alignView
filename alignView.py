@@ -19,13 +19,16 @@ if __name__ == "__main__":
 
     # app and mainWin are defined globably in the application
     # best to avoid defining things here so we don't clutter the global namespace
-    app = QApplication(sys.argv)
-
     # XXX For pyqtgraph, not sure this does anything
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
+
+    app = QApplication(sys.argv)
+
+    if app.styleHints().colorScheme() == QtCore.Qt.ColorScheme.Dark:
+        config.darkMode = True
 
     import pyqtgraph as pg
 
