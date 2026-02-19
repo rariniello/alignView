@@ -351,9 +351,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
     @pyqtSlot(int, int, float, float)
     def set_image_transform(self, sx, sy, scalex, scaley):
-        print(scalex, scaley)
         tr = QtGui.QTransform()
-        tr.translate(sx, sy)
+        tr.translate(sx * scalex, sy * scaley)
         tr.scale(scalex, scaley)
         self.imageView.getImageItem().setTransform(tr)
         # self.imageView.getImageItem().scale(scalex, scaley)
@@ -422,6 +421,14 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
                 img.T, autoRange=True, autoLevels=False, autoHistogramRange=False
             )
             self.first_image = False
+            # This is a bit of an akward way to do this, but it needs to be done after setting the image
+            self.set_image_transform(
+                self.offsetXField.value(),
+                self.offsetYField.value(),
+                self.binningHorizontalField.value(),
+                self.binningVerticalField.value(),
+            )
+            self.imageView.autoRange()
         else:
             self.imageView.getImageItem().setImage(
                 img.T, autoLevels=False, autoHistogramRange=False
