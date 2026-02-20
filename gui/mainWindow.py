@@ -82,8 +82,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
     def setup_plot(self):
         plot = pg.PlotItem()
-        # plot.setLabel(axis="left", text="Y-axis Label")
-        # plot.setLabel(axis="bottom", text="X-axis Label")
+        plot.getViewBox().setDefaultPadding(0)
         self.imageView = pg.ImageView(view=plot)
         self.imageViewWidgetLayout.addWidget(self.imageView)
         self.imageView.ui.roiBtn.hide()
@@ -94,9 +93,9 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         hist.vb.enableAutoRange("y", False)
         self.set_hist_range(self.max_level)
         hist.sigLevelsChanged.connect(self.on_levels_changed)
-        # cmap = pg.colormap.get("magma")
-        # self.imageView.setColorMap("magma")
-        # hist.vb.setLogMode("x", True)
+        cmap = pg.colormap.get("magma")
+        hist.gradient.setColorMap(cmap)
+        hist.gradient.showTicks(False)
 
     def set_hist_range(self, max):
         self.max_level = max

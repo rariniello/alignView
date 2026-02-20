@@ -3,7 +3,7 @@ import sys
 
 alignViewPath = None
 savePath = None
-testing = False
+testing = True
 darkMode = False
 
 

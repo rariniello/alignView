@@ -34,8 +34,8 @@ if __name__ == "__main__":
 
     # Set pyqtgraph defaults
     if config.darkMode:
-        pg.setConfigOption("background", "k")
-        pg.setConfigOption("foreground", "w")
+        pg.setConfigOption("background", "#222222")
+        pg.setConfigOption("foreground", "#a9a9a9")
     else:
         pg.setConfigOption("background", "w")
         pg.setConfigOption("foreground", "k")

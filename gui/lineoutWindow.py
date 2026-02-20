@@ -35,6 +35,7 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
     def setup_plot(self):
         self.plot = pg.PlotWidget()
         self.plot.invertY(True)
+        self.plot.getViewBox().setDefaultPadding(0)
         self.imageViewLayout.addWidget(self.plot)
         self.imageItem = pg.ImageItem()
         self.plot.addItem(self.imageItem)
@@ -49,6 +50,7 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
         self.xPlotItem = self.xplot.plot()
         pen = pg.mkPen(color="r")
         self.xFitItem = self.xplot.plot(pen=pen)
+        self.xplot.setXLink(self.plot)
 
     def setup_yplot(self):
         self.yplot = pg.PlotWidget()
@@ -57,6 +59,7 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
         self.yPlotItem = self.yplot.plot()
         pen = pg.mkPen(color="r")
         self.yFitItem = self.yplot.plot(pen=pen)
+        self.yplot.setYLink(self.plot)
 
     @pyqtSlot(dict)
     def on_new_image(self, data):
@@ -66,34 +69,35 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
 
     def update_xplot(self, data):
         # Plot the raw data
-        print(data["scalex"])
-        index = int((data["centroid"][1]-data["sy"])/data["scaley"])
+        index = int((data["centroid"][1] - data["sy"]) / data["scaley"])
         coord = data["x"]
         lineout = data["image"][index, :]
         self.xPlotItem.setData(coord, lineout)
         # Fit the curve
         px = self.fit_gaussian(coord, lineout, data["centroid"][0])
         self.xFitItem.setData(coord, an.gaussian(coord, *px))
-        self.sigmaXLabel.setText(
-            "Sigma X: {:0.3f}mm".format(px[2] * self.pixelCalField.value() * 1e-3)
-        )
+        value = self.scale_number_units(px[2] * self.pixelCalField.value() * 1e-6, "m")
+        self.sigmaXLabel.setText("Sigma X: " + value)
 
     def update_yplot(self, data):
         # Plot the raw data
-        index = int((data["centroid"][0]-data["sx"])/data["scalex"])
+        index = int((data["centroid"][0] - data["sx"]) / data["scalex"])
         coord = data["y"]
         lineout = data["image"][:, index]
         self.yPlotItem.setData(lineout, coord)
         # Fit the curve
         py = self.fit_gaussian(coord, lineout, data["centroid"][1])
         self.yFitItem.setData(an.gaussian(coord, *py), coord)
-        self.sigmaYLabel.setText(
-            "Sigma Y: {:0.3f}mm".format(py[2] * self.pixelCalField.value() * 1e-3)
-        )
+        value = self.scale_number_units(py[2] * self.pixelCalField.value() * 1e-6, "m")
+        self.sigmaYLabel.setText("Sigma Y: " + value)
 
     def update_plot(self, data):
         img = data["image"]
         self.imageItem.setImage(img, autoLevels=True)
+        tr = QtGui.QTransform()
+        tr.translate(data["sx"] * data["scalex"], data["sy"] * data["scaley"])
+        tr.scale(data["scalex"], data["scaley"])
+        self.imageItem.setTransform(tr)
 
     def fit_gaussian(self, x, y, x0):
         # A, x0, C, offset
@@ -109,3 +113,18 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
         except RuntimeError:
             p = None
         return p
+
+    def scale_number_units(self, value, unit, precision=4):
+        prefixs = np.array(["T", "G", "M", "k", "", "m", "μ", "n", "p", "f"])
+        scales = 0.9 * np.array(
+            [1.0e12, 1.0e9, 1.0e6, 1.0e3, 1.0, 1.0e-3, 1.0e-6, 1.0e-9, 1.0e-12, 1.0e-15]
+        )
+        sel = np.array(value / scales, dtype="int") > 0
+        if sum(sel) > 0:
+            prefix = prefixs[sel][0]
+            scale = scales[sel][0]
+        else:
+            scale = 1
+            prefix = ""
+        value = value / scale
+        return f"{value:#.{precision}g}{prefix}{unit}"
