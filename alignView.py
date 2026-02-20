@@ -33,9 +33,14 @@ if __name__ == "__main__":
     import pyqtgraph as pg
 
     # Set pyqtgraph defaults
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
+    if config.darkMode:
+        pg.setConfigOption("background", "k")
+        pg.setConfigOption("foreground", "w")
+    else:
+        pg.setConfigOption("background", "w")
+        pg.setConfigOption("foreground", "k")
     pg.setConfigOption("antialias", True)
+    pg.setConfigOption("imageAxisOrder", "row-major")
 
     from gui import mainWindow
 

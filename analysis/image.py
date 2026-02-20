@@ -7,7 +7,7 @@ from scipy.ndimage import median_filter
 
 
 def get_xy_arrays(
-    image: np.ndarray, sx: int = 0, sy: int = 0
+    image: np.ndarray, sx: int = 0, sy: int = 0, xscale: float = 1.0, yscale: float = 1.0
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns arrays of pixel center coordinates along the x and y axis.
 
@@ -23,6 +23,8 @@ def get_xy_arrays(
     Y, X = image.shape
     x = np.arange(0, X) + sx + 0.5
     y = np.arange(0, Y) + sy + 0.5
+    x = x*xscale
+    y = y*yscale
     return x, y
 
 
