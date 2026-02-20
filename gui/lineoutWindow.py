@@ -66,7 +66,8 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
 
     def update_xplot(self, data):
         # Plot the raw data
-        index = int(data["centroid"][1])
+        print(data["scalex"])
+        index = int((data["centroid"][1]-data["sy"])/data["scaley"])
         coord = data["x"]
         lineout = data["image"][index, :]
         self.xPlotItem.setData(coord, lineout)
@@ -79,7 +80,7 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
 
     def update_yplot(self, data):
         # Plot the raw data
-        index = int(data["centroid"][0])
+        index = int((data["centroid"][0]-data["sx"])/data["scalex"])
         coord = data["y"]
         lineout = data["image"][:, index]
         self.yPlotItem.setData(lineout, coord)
@@ -100,7 +101,6 @@ class AlignViewLineoutWindow(QMainWindow, ui_LineoutWindow.Ui_LineoutView):
         C0 = 0.001
         y0 = y[0]
         bounds = ([0.0, x[0], 0.0, 0.0], [np.inf, x[-1], np.inf, np.inf])
-        print(x)
         try:
             p, covariancex = opt.curve_fit(
                 an._gaussian, x, y, p0=(A0, x0, C0, y0), bounds=bounds

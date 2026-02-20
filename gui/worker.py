@@ -40,8 +40,8 @@ class Worker(QObject):
         parameters = self._get_parameters()
         self.sx = parameters["offsetX"]
         self.sy = parameters["offsetY"]
-        self.scalex = 1 / parameters["binning_horizontal"]
-        self.scaley = 1 / parameters["binning_vertical"]
+        self.scalex = parameters["binning_horizontal"]
+        self.scaley = parameters["binning_vertical"]
         self.connected.emit(parameters)
         self.camera.offsetX_changed.connect(self.update_offsetX)
         self.camera.offsetY_changed.connect(self.update_offsetY)
@@ -145,6 +145,10 @@ class Worker(QObject):
         data["centroid"] = centroid
         data["x"] = x
         data["y"] = y
+        data["sx"] = self.sx
+        data["sy"] = self.sy
+        data["scalex"] = self.scalex
+        data["scaley"] = self.scaley
         self.update.emit(data)
 
     @pyqtSlot(float)
