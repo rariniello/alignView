@@ -83,6 +83,8 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         # plot.setLabel(axis="bottom", text="X-axis Label")
         self.imageView = pg.ImageView(view=plot)
         self.imageViewWidgetLayout.addWidget(self.imageView)
+        self.imageView.ui.roiBtn.hide()
+        self.imageView.ui.menuBtn.hide()
         view = self.imageView.getView()
         view.disableAutoRange()
         hist = self.imageView.getHistogramWidget()
