@@ -4,11 +4,12 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt6 import QtGui
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QFileDialog, QMainWindow
+from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 import config
 import gui.ui.ui_MainWindow as ui_MainWindow
 from backends import camera_basler, camera_test, enumerate_basler, enumerate_test
+from gui import lineoutWindow
 from gui.worker import Worker
 
 
@@ -23,6 +24,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
     signal_stop_streaming = pyqtSignal()
     request_parameters = pyqtSignal()
     request_offset_range = pyqtSignal()
+    update = pyqtSignal(dict)
 
     def __init__(self, parent=None, icon=None):
         super().__init__(parent)
@@ -76,6 +78,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.beamCircleCheckBox.checkStateChanged.connect(self.toggle_centroid_circle)
         self.targetCircleSizeField.valueChanged.connect(self.set_target_circle_size)
         self.beamCircleSizeField.valueChanged.connect(self.set_centroid_circle_size)
+        self.displayLineoutsButton.clicked.connect(self.show_lineout_window)
 
     def setup_plot(self):
         plot = pg.PlotItem()
@@ -197,6 +200,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
         self.worker.update.connect(self.doUpdate)
         self.worker.connected.connect(self.onConnect)
+        self.worker.connectionFailed.connect(self.onFailedConnect)
         self.worker.parametersUpdated.connect(self.onParametersUpdated)
         self.worker.offsetRangeUpdated.connect(self.update_offset)
         self.worker.binningUpdated.connect(self.update_size_and_offset)
@@ -277,6 +281,11 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
 
         self.onParametersUpdated(parameters)
 
+    @pyqtSlot(object)
+    def onFailedConnect(self, error):
+        QMessageBox.critical(self, "Error: Failed to connect", str(error))
+        print(error)
+
     @pyqtSlot(dict)
     def onParametersUpdated(self, parameters):
         self.exposureField.setValue(parameters["exposure"])
@@ -342,20 +351,23 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.widthField.setValue(parameters["width"])
         self.widthField.setMinimum(parameters["width_range"][0])
         self.widthField.setMaximum(parameters["width_range"][1])
-        self.targetXField.setMaximum(parameters["width_range"][1])
+        self.targetXField.setMaximum(
+            parameters["width_range"][1] * parameters["binning_horizontal"]
+        )
 
         self.heightField.setValue(parameters["height"])
         self.heightField.setMinimum(parameters["height_range"][0])
         self.heightField.setMaximum(parameters["height_range"][1])
-        self.targetYField.setMaximum(parameters["height_range"][1])
+        self.targetYField.setMaximum(
+            parameters["height_range"][1] * parameters["binning_vertical"]
+        )
 
         self.update_offset(parameters)
 
     @pyqtSlot(int, int, float, float)
     def set_image_transform(self, sx, sy, scalex, scaley):
-        print(scalex, scaley)
         tr = QtGui.QTransform()
-        tr.translate(sx, sy)
+        tr.translate(sx * scalex, sy * scaley)
         tr.scale(scalex, scaley)
         self.imageView.getImageItem().setTransform(tr)
         # self.imageView.getImageItem().scale(scalex, scaley)
@@ -372,6 +384,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         # if self.streaming:
         #     self.request_image.emit()
         self.printFramerate()
+        self.update.emit(data)
 
     def printFramerate(self):
         """Calculates the framerate and prints it to the statusbar."""
@@ -421,12 +434,20 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         if self.first_image:
             # Set the imageView rather than the imageViewItem to use autoRange on the first image
             self.imageView.setImage(
-                img.T, autoRange=True, autoLevels=False, autoHistogramRange=False
+                img, autoRange=True, autoLevels=False, autoHistogramRange=False
             )
             self.first_image = False
+            # This is a bit of an akward way to do this, but it needs to be done after setting the image
+            self.set_image_transform(
+                self.offsetXField.value(),
+                self.offsetYField.value(),
+                self.binningHorizontalField.value(),
+                self.binningVerticalField.value(),
+            )
+            self.imageView.autoRange()
         else:
             self.imageView.getImageItem().setImage(
-                img.T, autoLevels=False, autoHistogramRange=False
+                img, autoLevels=False, autoHistogramRange=False
             )
         if self.normalizeCheckBox.isChecked():
             self.set_hist_range(np.max(img))
@@ -534,3 +555,9 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
     def mark_beam(self):
         self.set_target_crosshair_x(self.centroidVLine.getPos()[0])
         self.set_target_crosshair_y(self.centroidHLine.getPos()[1])
+
+    @pyqtSlot()
+    def show_lineout_window(self):
+        self.lineWin = lineoutWindow.AlignViewLineoutWindow()
+        self.update.connect(self.lineWin.on_new_image)
+        self.lineWin.show()

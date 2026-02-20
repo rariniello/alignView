@@ -41,7 +41,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>793</height>
+         <height>766</height>
         </rect>
        </property>
        <attribute name="label">
@@ -676,7 +676,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>793</height>
+         <height>766</height>
         </rect>
        </property>
        <attribute name="label">
@@ -905,7 +905,73 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>40</height>
+               <height>0</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_3">
+       <attribute name="label">
+        <string>Analysis</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QFrame" name="frame_3">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="displayLineoutsButton">
+             <property name="text">
+              <string>Display Lineouts</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>0</height>
               </size>
              </property>
             </spacer>

@@ -9,7 +9,7 @@ class Worker(QObject):
     finished = pyqtSignal()
     update = pyqtSignal(dict)
     connected = pyqtSignal(dict)
-    connectionFailed = pyqtSignal()
+    connectionFailed = pyqtSignal(object)
     parametersUpdated = pyqtSignal(dict)
     offsetRangeUpdated = pyqtSignal(dict)
     binningUpdated = pyqtSignal(dict)
@@ -32,15 +32,16 @@ class Worker(QObject):
         """Attempts to connect to the camera."""
         try:
             self.camera = self.camera_class(self.serial_number)
-        except TypeError:
-            self.connectionFailed.emit()
+        except Exception as error:
+            self.connectionFailed.emit(error)
+            self.finished.emit()
             return
 
         parameters = self._get_parameters()
         self.sx = parameters["offsetX"]
         self.sy = parameters["offsetY"]
-        self.scalex = 1 / parameters["binning_horizontal"]
-        self.scaley = 1 / parameters["binning_vertical"]
+        self.scalex = parameters["binning_horizontal"]
+        self.scaley = parameters["binning_vertical"]
         self.connected.emit(parameters)
         self.camera.offsetX_changed.connect(self.update_offsetX)
         self.camera.offsetY_changed.connect(self.update_offsetY)
@@ -99,6 +100,8 @@ class Worker(QObject):
         parameters["width_range"] = self.camera.get_width_range()
         parameters["height"] = self.camera.get_height()
         parameters["height_range"] = self.camera.get_height_range()
+        parameters["binning_horizontal"] = self.camera.get_binning_horizontal()
+        parameters["binning_vertical"] = self.camera.get_binning_vertical()
         return parameters
 
     def update_image_transform(self):
@@ -130,7 +133,7 @@ class Worker(QObject):
     def process_image(self, img):
         data = {}
         # Any image processing necessary
-        x, y = an.get_xy_arrays(img, self.sx, self.sy)
+        x, y = an.get_xy_arrays(img, self.sx, self.sy, self.scalex, self.scaley)
         centroid, px, py, x_proj, y_proj = an.findImageCenter(
             img, x, y, self.config, self.previousPx, self.previousPy
         )
@@ -140,6 +143,12 @@ class Worker(QObject):
         data["x_proj"] = x_proj
         data["y_proj"] = y_proj
         data["centroid"] = centroid
+        data["x"] = x
+        data["y"] = y
+        data["sx"] = self.sx
+        data["sy"] = self.sy
+        data["scalex"] = self.scalex
+        data["scaley"] = self.scaley
         self.update.emit(data)
 
     @pyqtSlot(float)

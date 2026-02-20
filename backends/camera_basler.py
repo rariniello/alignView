@@ -70,6 +70,7 @@ class Basler(QObject):
         )
 
     def stop_streaming(self):
+        print("Stop grabbing")
         self.camera.StopGrabbing()
 
     # XXX Should not be used when using the grabbing thread
