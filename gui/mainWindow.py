@@ -1,3 +1,4 @@
+import os
 import time
 
 import numpy as np
@@ -41,6 +42,7 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.centroid = np.zeros(2)
 
         self.setupUi(self)
+        self.set_icons()
         self.select_backend()
         self.connect_signal_slots()
         self.setup_plot()
@@ -79,6 +81,12 @@ class AlignViewMainWindow(QMainWindow, ui_MainWindow.Ui_AlignView):
         self.targetCircleSizeField.valueChanged.connect(self.set_target_circle_size)
         self.beamCircleSizeField.valueChanged.connect(self.set_centroid_circle_size)
         self.displayLineoutsButton.clicked.connect(self.show_lineout_window)
+
+    def set_icons(self):
+        icon = QtGui.QIcon()
+        path = os.path.join(config.iconPath, "arrow-circle-double-135.png")
+        icon.addPixmap(QtGui.QPixmap(path))
+        self.refreshButton.setIcon(icon)
 
     def setup_plot(self):
         plot = pg.PlotItem()

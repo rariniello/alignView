@@ -2,6 +2,7 @@ import os
 import sys
 
 alignViewPath = None
+iconPath = None
 savePath = None
 testing = False
 darkMode = False
@@ -9,9 +10,11 @@ darkMode = False
 
 def defPaths():
     global alignViewPath
+    global iconPath
     global savePath
 
     alignViewPath = getAlignViewPath()
+    iconPath = os.path.join(alignViewPath, "designer")
 
 
 def getAlignViewPath():
