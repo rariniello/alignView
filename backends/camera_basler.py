@@ -295,3 +295,25 @@ class Basler(QObject):
             self.binning_vertical_changed.emit(update.Value)
         except:
             pass
+
+    # Binning Horizontal Mode
+    # -----------------------------------------------------------------
+    def set_binning_horizontal_mode(self, value):
+        self.camera.BinningHorizontalMode.Value = value
+
+    def get_binning_horizontal_mode(self):
+        return self.camera.BinningHorizontalMode.Value
+
+    def enumerate_binning_horizontal_mode(self):
+        return self.camera.BinningHorizontalMode.Symbolics
+
+    # Binning Vertical Mode
+    # -----------------------------------------------------------------
+    def set_binning_vertical_mode(self, value):
+        self.camera.BinningVerticalMode.Value = value
+
+    def get_binning_vertical_mode(self):
+        return self.camera.BinningVerticalMode.Value
+
+    def enumerate_binning_vertical_mode(self):
+        return self.camera.BinningVerticalMode.Symbolics

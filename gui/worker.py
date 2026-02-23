@@ -45,6 +45,8 @@ class Worker(QObject):
         self.connected.emit(parameters)
         self.camera.offsetX_changed.connect(self.update_offsetX)
         self.camera.offsetY_changed.connect(self.update_offsetY)
+        self.camera.binning_horizontal_changed.connect(self.update_binning_horizontal)
+        self.camera.binning_vertical_changed.connect(self.update_binning_vertical)
         self.camera.image_grabbed.connect(self.on_new_image)
 
     @pyqtSlot()
@@ -80,6 +82,16 @@ class Worker(QObject):
         )
         parameters["binning_vertical"] = self.camera.get_binning_vertical()
         parameters["binning_vertical_range"] = self.camera.get_binning_vertical_range()
+        parameters["binning_horizontal_mode"] = (
+            self.camera.get_binning_horizontal_mode()
+        )
+        parameters["binning_horizontal_mode_options"] = (
+            self.camera.enumerate_binning_horizontal_mode()
+        )
+        parameters["binning_vertical_mode"] = self.camera.get_binning_vertical_mode()
+        parameters["binning_vertical_mode_options"] = (
+            self.camera.enumerate_binning_vertical_mode()
+        )
         return parameters
 
     def get_offset_range(self):
@@ -105,7 +117,6 @@ class Worker(QObject):
         return parameters
 
     def update_image_transform(self):
-        # TODO implement the effect of binning on this
         self.imageTransformUpdated.emit(self.sx, self.sy, self.scalex, self.scaley)
 
     @pyqtSlot()
@@ -227,5 +238,15 @@ class Worker(QObject):
         self.camera.set_binning_vertical(value)
         parameters = self.get_offset_and_size()
         self.binningUpdated.emit(parameters)
+        self.scaley = value
+        self.update_image_transform()
+
+    @pyqtSlot(int)
+    def update_binning_horizontal(self, value):
+        self.scalex = value
+        self.update_image_transform()
+
+    @pyqtSlot(int)
+    def update_binning_vertical(self, value):
         self.scaley = value
         self.update_image_transform()

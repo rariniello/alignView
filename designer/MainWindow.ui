@@ -33,7 +33,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="page">
        <property name="geometry">
@@ -727,14 +727,14 @@
              <property name="labelAlignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
-             <item row="0" column="0">
+             <item row="2" column="0">
               <widget class="QLabel" name="label_4">
                <property name="text">
                 <string>Binning X</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
+             <item row="2" column="1">
               <widget class="QSpinBox" name="binningHorizontalField">
                <property name="enabled">
                 <bool>false</bool>
@@ -759,7 +759,7 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="1">
+             <item row="7" column="1">
               <widget class="QComboBox" name="pixelFormatField">
                <property name="enabled">
                 <bool>false</bool>
@@ -778,14 +778,14 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
+             <item row="5" column="0">
               <widget class="QLabel" name="label_10">
                <property name="text">
                 <string>Trigger Mode</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
+             <item row="5" column="1">
               <widget class="QComboBox" name="triggerModeField">
                <property name="enabled">
                 <bool>false</bool>
@@ -804,7 +804,7 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
+             <item row="6" column="1">
               <widget class="QComboBox" name="triggerSourceField">
                <property name="enabled">
                 <bool>false</bool>
@@ -823,28 +823,28 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
+             <item row="6" column="0">
               <widget class="QLabel" name="label_9">
                <property name="text">
                 <string>Trigger Source</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
+             <item row="4" column="0">
               <widget class="QLabel" name="label_17">
                <property name="text">
                 <string>Exposure Mode</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
+             <item row="7" column="0">
               <widget class="QLabel" name="label_16">
                <property name="text">
                 <string>Pixel Format</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
+             <item row="4" column="1">
               <widget class="QComboBox" name="exposureModeField">
                <property name="enabled">
                 <bool>false</bool>
@@ -863,14 +863,14 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="0">
+             <item row="3" column="0">
               <widget class="QLabel" name="label_18">
                <property name="text">
                 <string>Binning Y</string>
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
+             <item row="3" column="1">
               <widget class="QSpinBox" name="binningVerticalField">
                <property name="enabled">
                 <bool>false</bool>
@@ -895,6 +895,52 @@
                </property>
               </widget>
              </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_19">
+               <property name="text">
+                <string>Binning X Mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="binningXModeField">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_20">
+               <property name="text">
+                <string>Binning Y Mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="binningYModeField">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -916,6 +962,14 @@
        </layout>
       </widget>
       <widget class="QWidget" name="page_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>200</width>
+         <height>766</height>
+        </rect>
+       </property>
        <attribute name="label">
         <string>Analysis</string>
        </attribute>
